@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Star, Shield, Zap, CheckCircle2, ChevronRight, Play, Save } from 'lucide-react';
+import { ArrowRight, Star, Shield, Zap, CheckCircle2, ChevronRight, Play, Bookmark } from 'lucide-react';
 import { motion } from 'motion/react';
 import exclusivityImage from "@/src/assets/images/regenerated_image_1777919477660.png";
 import heroImage from "@/src/assets/images/regenerated_image_1777920930012.png";
@@ -83,7 +83,7 @@ export default function Home() {
           <Image src={heroImage} alt="Luxury Hero" fill className="object-cover brightness-50 object-[center_35%]" referrerPolicy="no-referrer" priority />
         </div>
         
-        <div className="relative z-10 w-full px-6 md:px-12 max-w-screen-2xl mx-auto flex flex-col justify-center items-start">
+        <div className="relative z-10 w-full px-6 md:px-12 max-w-screen-2xl mx-auto flex flex-col justify-center items-center text-center">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -100,7 +100,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1, ease: 'easeOut' }}
-            className="text-5xl md:text-6xl lg:text-[5.5rem] font-bold text-white tracking-tight mb-8 leading-[1.05] max-w-5xl drop-shadow-2xl"
+            className="text-5xl md:text-7xl lg:text-[7rem] font-black text-white tracking-tighter mb-8 leading-[1.0] max-w-6xl drop-shadow-2xl mx-auto"
           >
             The Premier Marketplace to <br className="hidden lg:block"/>
             Rent or Sell <span className="font-serif italic font-medium text-emerald-300">Real Estate,</span> <br className="hidden md:block"/>
@@ -111,7 +111,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
-            className="text-lg md:text-2xl text-zinc-300 mb-10 max-w-3xl font-light leading-relaxed"
+            className="text-lg md:text-2xl text-zinc-300 mb-10 max-w-3xl font-light leading-relaxed mx-auto text-center"
           >
             Discover and acquire the world&apos;s most exceptional properties. Whether you are looking to rent a luxury penthouse, sell expansive land, or invest in fine vehicles, we facilitate exclusive off-market opportunities.
           </motion.p>
@@ -171,7 +171,7 @@ export default function Home() {
                     onClick={(e) => toggleFavorite(e, item.id.toString())}
                     className="absolute top-5 right-5 z-20 p-2.5 bg-white/95 backdrop-blur-md rounded-full opacity-100 transition-all duration-300 hover:bg-emerald-50 hover:scale-110 shadow-[0_4px_20px_rgba(0,0,0,0.1)]"
                   >
-                    <Save size={18} className={favorites.includes(item.id.toString()) ? "text-emerald-700 fill-emerald-100" : "text-zinc-700"} />
+                    <Bookmark size={18} className={favorites.includes(item.id.toString()) ? "text-emerald-700 fill-emerald-100" : "text-zinc-700"} />
                   </button>
                   <Image src={item.image} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" referrerPolicy="no-referrer" />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 via-zinc-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
