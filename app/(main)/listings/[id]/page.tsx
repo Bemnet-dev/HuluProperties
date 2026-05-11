@@ -62,14 +62,14 @@ export default function ListingDetail() {
       <AnimatePresence>
         {isShareModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsShareModalOpen(false)}
               className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -103,7 +103,7 @@ export default function ListingDetail() {
                     <div className="flex-1 px-3 py-2 text-sm text-zinc-500 font-medium truncate italic">
                       {shareUrl}
                     </div>
-                    <button 
+                    <button
                       onClick={copyToClipboard}
                       className="bg-zinc-900 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-900 transition-colors shrink-0"
                     >
@@ -126,7 +126,7 @@ export default function ListingDetail() {
           <ArrowLeft size={18} /> Back to Collection
         </Link>
         <div className="flex gap-3">
-          <button 
+          <button
             onClick={() => setIsShareModalOpen(true)}
             className="p-2.5 rounded-full border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm active:scale-90"
           >
@@ -157,16 +157,16 @@ export default function ListingDetail() {
         <div className="flex flex-col gap-4 mb-16">
           <div className="relative w-full h-[50vh] md:h-[65vh] rounded-3xl overflow-hidden shadow-sm bg-zinc-200 flex items-center justify-center">
             {details.images.length > 0 ? (
-               <Image src={details.images[activeImage]} alt="Main gallery image" fill className="object-cover transition-opacity duration-500" referrerPolicy="no-referrer" priority />
+              <Image src={details.images[activeImage]} alt="Main gallery image" fill className="object-cover transition-opacity duration-500" referrerPolicy="no-referrer" priority />
             ) : (
-               <div className="text-zinc-400 font-bold">No images available</div>
+              <div className="text-zinc-400 font-bold">No images available</div>
             )}
           </div>
           {details.images.length > 1 && (
             <div className="grid grid-cols-4 gap-2 md:gap-4 overflow-x-auto">
               {details.images.map((img: string, idx: number) => (
-                <button 
-                  key={idx} 
+                <button
+                  key={idx}
                   onClick={() => setActiveImage(idx)}
                   className={`relative h-20 md:h-40 rounded-xl overflow-hidden shadow-sm transition-all ${activeImage === idx ? 'ring-4 ring-emerald-800 opacity-100' : 'opacity-70 hover:opacity-100'}`}
                 >
@@ -185,7 +185,7 @@ export default function ListingDetail() {
             <p className="text-lg text-zinc-600 leading-relaxed mb-12">
               {details.description}
             </p>
-            
+
             <h2 className="text-2xl font-bold text-zinc-900 mb-6">Key Specifications</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
               {details.features.map((feature, i) => (
@@ -204,15 +204,15 @@ export default function ListingDetail() {
             <div className="bg-zinc-50 border border-zinc-200 rounded-3xl p-8 md:sticky top-28 shadow-sm">
               <h3 className="text-xl font-bold text-zinc-900 mb-2">Interested in this asset?</h3>
               <p className="text-zinc-500 mb-8 font-medium">Contact the owner directly to discuss acquisition or schedule a private viewing.</p>
-              
+
               <div className="flex flex-col gap-4">
-                <Link 
+                <Link
                   href="tel:+251967549339"
                   className="w-full bg-emerald-900 text-white font-bold py-5 rounded-2xl hover:bg-emerald-800 transition-all duration-300 flex justify-center items-center gap-3 shadow-lg hover:shadow-emerald-900/20 active:scale-95"
                 >
                   <Phone size={22} className="fill-white" /> Call the owner
                 </Link>
-                <Link 
+                <Link
                   href="https://t.me/el_beba1"
                   target="_blank"
                   className="w-full bg-[#0088cc] text-white font-bold py-5 rounded-2xl hover:bg-[#0077b5] transition-all duration-300 flex justify-center items-center gap-3 shadow-lg hover:shadow-blue-900/20 active:scale-95"

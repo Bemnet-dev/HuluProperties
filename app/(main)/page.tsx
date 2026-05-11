@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Star, Shield, Zap, CheckCircle2, ChevronRight, Play, Bookmark } from 'lucide-react';
+import { ArrowRight, Star, Shield, Zap, CheckCircle2, TrendingUp, MapPin, Home, Car, Landmark, Bookmark, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 import exclusivityImage from "@/src/assets/images/regenerated_image_1777919477660.png";
 import heroImage from "@/src/assets/images/regenerated_image_1777920930012.png";
@@ -23,7 +23,7 @@ export default function Home() {
           .from('favorites')
           .select('listing_id')
           .eq('user_id', user.id);
-        
+
         if (!error && data) {
           setFavorites(data.map(f => f.listing_id.toString()));
         }
@@ -40,21 +40,21 @@ export default function Home() {
   const toggleFavorite = async (e: React.MouseEvent, listingId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!user) {
       router.push('/login');
       return;
     }
 
     const isFav = favorites.includes(listingId);
-    
+
     if (isFav) {
       const { error } = await supabase
         .from('favorites')
         .delete()
         .eq('user_id', user.id)
         .eq('listing_id', listingId);
-        
+
       if (!error) {
         setFavorites(favorites.filter(id => id !== listingId));
       }
@@ -62,7 +62,7 @@ export default function Home() {
       const { error } = await supabase
         .from('favorites')
         .insert([{ user_id: user.id, listing_id: listingId }]);
-        
+
       if (!error) {
         setFavorites([...favorites, listingId]);
       }
@@ -79,134 +79,255 @@ export default function Home() {
         .eq('status', 'Active')
         .order('created_at', { ascending: false })
         .limit(3);
-        
+
       if (!error && data) {
         setFeatured(data);
       }
     };
-    
+
     loadFeatured();
   }, []);
 
+  const categories = [
+    {
+      icon: Home,
+      title: "Premium Properties",
+      description: "Luxury homes, penthouses, and estates",
+      count: "150+ Listings"
+    },
+    {
+      icon: Car,
+      title: "Exotic Vehicles",
+      description: "Rare and luxury automobiles",
+      count: "80+ Listings"
+    },
+    {
+      icon: Landmark,
+      title: "Prime Land",
+      description: "Investment-grade land parcels",
+      count: "120+ Listings"
+    }
+  ];
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="relative w-full min-h-[100dvh] lg:min-h-[95vh] flex items-center justify-center overflow-hidden py-32 md:py-48">
+      {/* Hero Section - Redesigned */}
+      <section className="relative w-full min-h-[100dvh] flex items-center justify-center overflow-hidden">
+        {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
-          <Image src={heroImage} alt="Luxury Hero" fill className="object-cover brightness-50 object-[center_35%]" referrerPolicy="no-referrer" priority />
+          <Image
+            src={heroImage}
+            alt="Luxury Hero"
+            fill
+            className="object-cover object-center"
+            referrerPolicy="no-referrer"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-zinc-900/90 via-zinc-900/70 to-emerald-900/80"></div>
         </div>
-        
-        <div className="relative z-10 w-full px-6 md:px-12 max-w-screen-2xl mx-auto flex flex-col justify-center items-center text-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="flex items-center gap-2 mb-6"
-          >
-            <span className="text-emerald-400 font-bold tracking-widest uppercase text-xs mb-6 inline-flex items-center gap-2 bg-zinc-900/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-2xl">
-               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-               Hulu Properties
-            </span>
-          </motion.div>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: 'easeOut' }}
-            className="text-4xl sm:text-5xl md:text-7xl lg:text-[7rem] font-black text-white tracking-tighter mb-8 leading-[1.0] max-w-6xl drop-shadow-2xl mx-auto"
-          >
-            The Premier Marketplace to <br className="hidden lg:block"/>
-            Rent or Sell <span className="font-serif italic font-medium text-emerald-300">Real Estate,</span> <br className="hidden md:block"/>
-            Houses, Land & Exquisite Cars.
-          </motion.h1>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
-            className="text-lg md:text-2xl text-zinc-300 mb-10 max-w-3xl font-light leading-relaxed mx-auto text-center"
-          >
-            Discover and acquire the world&apos;s most exceptional properties. Whether you are looking to rent a luxury penthouse, sell expansive land, or invest in fine vehicles, we facilitate exclusive off-market opportunities.
-          </motion.p>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-5 w-full sm:w-auto"
-          >
-            <Link href="/listings" className="bg-white text-zinc-900 px-8 py-4 text-center rounded-2xl font-bold hover:bg-zinc-100 transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-3 text-lg group">
-              Explore Collection <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
+
+        {/* Floating Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            animate={{
+              y: [0, -20, 0],
+              opacity: [0.3, 0.6, 0.3]
+            }}
+            transition={{ duration: 8, repeat: Infinity }}
+            className="absolute top-20 right-20 w-72 h-72 bg-emerald-500/20 rounded-full blur-3xl"
+          />
+          <motion.div
+            animate={{
+              y: [0, 20, 0],
+              opacity: [0.2, 0.5, 0.2]
+            }}
+            transition={{ duration: 10, repeat: Infinity }}
+            className="absolute bottom-20 left-20 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl"
+          />
         </div>
-        
-        {/* Scroll indicator overlay */}
-        <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1, duration: 1 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 flex flex-col items-center gap-2 animate-bounce"
-        >
-          <span className="text-xs font-semibold tracking-widest uppercase">Scroll</span>
-          <ArrowRight className="rotate-90" size={16} />
-        </motion.div>
+
+        <div className="relative z-10 w-full px-6 md:px-12 max-w-screen-2xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="inline-flex items-center gap-2 mb-8 bg-emerald-500/20 backdrop-blur-md px-5 py-2.5 rounded-full border border-emerald-400/30"
+              >
+                <Sparkles className="text-emerald-300" size={16} />
+                <span className="text-emerald-200 font-bold tracking-wide uppercase text-xs">Premium Marketplace</span>
+              </motion.div>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.1 }}
+                className="text-5xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight mb-6 leading-[1.1]"
+              >
+                Discover Your Next
+                <span className="block text-emerald-400">Premium Asset</span>
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="text-xl text-zinc-300 mb-10 leading-relaxed max-w-xl"
+              >
+                Explore exclusive properties, luxury vehicles, and prime land investments. Your gateway to extraordinary acquisitions.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="flex flex-col sm:flex-row gap-4"
+              >
+                <Link
+                  href="/listings"
+                  className="group bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-xl shadow-emerald-900/30 hover:shadow-2xl hover:shadow-emerald-900/40 flex items-center justify-center gap-3 text-lg"
+                >
+                  Explore Collection
+                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link
+                  href="/contact"
+                  className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-2 border-white/30 px-8 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 text-lg"
+                >
+                  Contact Us
+                </Link>
+              </motion.div>
+
+              {/* Stats */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="grid grid-cols-3 gap-6 mt-16 pt-8 border-t border-white/20"
+              >
+                <div>
+                  <div className="text-3xl font-black text-white mb-1">350+</div>
+                  <div className="text-sm text-zinc-400 font-medium">Active Listings</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-black text-white mb-1">$2.5B+</div>
+                  <div className="text-sm text-zinc-400 font-medium">Total Value</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-black text-white mb-1">98%</div>
+                  <div className="text-sm text-zinc-400 font-medium">Satisfaction</div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Right Content - Category Cards */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="hidden lg:flex flex-col gap-4"
+            >
+              {categories.map((category, index) => (
+                <motion.div
+                  key={category.title}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
+                  whileHover={{ x: 10, scale: 1.02 }}
+                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 hover:bg-white/15 transition-all cursor-pointer"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
+                      <category.icon className="text-emerald-300" size={28} strokeWidth={2} />
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="text-xl font-bold text-white mb-1">{category.title}</h3>
+                      <p className="text-zinc-300 text-sm mb-2">{category.description}</p>
+                      <span className="text-emerald-400 text-xs font-bold">{category.count}</span>
+                    </div>
+                    <ArrowRight className="text-white/50 group-hover:text-white transition-colors" size={20} />
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
       </section>
 
-      {/* Featured Section */}
-      <section className="py-32 px-6 md:px-12 max-w-screen-2xl mx-auto w-full">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-          <div className="max-w-2xl">
-            <h2 className="text-4xl md:text-5xl font-black text-zinc-900 tracking-tight mb-4">Featured Acquisitions</h2>
-            <p className="text-zinc-500 text-lg md:text-xl font-medium leading-relaxed">Hand-selected opportunities offering exceptional value, uncompromising quality, and unparalleled exclusivity.</p>
-          </div>
-          <Link href="/listings" className="flex items-center gap-2 text-emerald-800 font-bold bg-emerald-50 px-6 py-3 rounded-full hover:bg-emerald-100 transition-colors shrink-0">
-            View the Portfolio <ArrowRight size={18} />
-          </Link>
+      {/* Featured Listings */}
+      <section className="py-24 px-6 md:px-12 max-w-screen-2xl mx-auto w-full bg-zinc-50">
+        <div className="text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 mb-4 bg-emerald-100 px-4 py-2 rounded-full"
+          >
+            <Star className="text-emerald-700" size={16} fill="currentColor" />
+            <span className="text-emerald-900 font-bold text-sm uppercase tracking-wide">Featured</span>
+          </motion.div>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-5xl font-black text-zinc-900 tracking-tight mb-4"
+          >
+            Exclusive Opportunities
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-zinc-600 text-lg max-w-2xl mx-auto"
+          >
+            Hand-picked premium assets offering exceptional value and unparalleled quality
+          </motion.p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {featured.map((item, i) => (
-            <motion.div 
+            <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
+              viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
             >
-              <div className="group relative flex flex-col bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 h-full border border-zinc-100 hover:border-zinc-200 transform hover:-translate-y-2">
+              <div className="group relative flex flex-col bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 h-full border border-zinc-200 transform hover:-translate-y-2">
                 <Link href={`/listings/${item.id}`} className="absolute inset-0 z-0"></Link>
-                <div className="relative h-[22rem] w-full overflow-hidden block">
-                  <div className="absolute top-5 left-5 z-10 bg-white/95 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-bold text-zinc-900 uppercase tracking-widest shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
+                <div className="relative h-[20rem] w-full overflow-hidden">
+                  <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-md px-4 py-2 rounded-full text-xs font-bold text-zinc-900 uppercase tracking-wide shadow-lg">
                     {item.type}
                   </div>
-                  <button 
+                  <button
                     onClick={(e) => toggleFavorite(e, item.id.toString())}
-                    className="absolute top-5 right-5 z-20 p-2.5 bg-white/95 backdrop-blur-md rounded-full opacity-100 transition-all duration-300 hover:bg-emerald-50 hover:scale-110 shadow-[0_4px_20px_rgba(0,0,0,0.1)]"
+                    className="absolute top-4 right-4 z-20 p-2.5 bg-white/95 backdrop-blur-md rounded-full transition-all duration-300 hover:bg-emerald-50 hover:scale-110 shadow-lg"
                   >
-                    <Bookmark size={18} className={favorites.includes(item.id.toString()) ? "text-emerald-700 fill-emerald-100" : "text-zinc-700"} />
+                    <Bookmark size={18} className={favorites.includes(item.id.toString()) ? "text-emerald-700 fill-emerald-700" : "text-zinc-700"} />
                   </button>
                   {item.images && item.images.length > 0 ? (
-                    <Image src={item.images[0]} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" referrerPolicy="no-referrer" />
+                    <Image src={item.images[0]} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
                   ) : (
                     <div className="w-full h-full bg-zinc-200 flex items-center justify-center text-zinc-400">No Image</div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 via-zinc-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 </div>
-                <div className="p-8 flex flex-col flex-grow bg-white relative z-10 pointer-events-none">
-                  <div className="text-emerald-700 text-xs mb-3 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 relative"><span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-50"></span></span>
-                     {item.location}
+                <div className="p-6 flex flex-col flex-grow relative z-10 pointer-events-none">
+                  <div className="flex items-center gap-2 text-emerald-700 text-xs mb-3 font-bold uppercase tracking-wide">
+                    <MapPin size={14} />
+                    {item.location}
                   </div>
-                  <h3 className="text-2xl font-black text-zinc-900 tracking-tight mb-2 leading-tight group-hover:text-emerald-800 transition-colors">{item.title}</h3>
-                  <p className="text-zinc-500 font-medium mb-8 flex-grow text-sm leading-relaxed">{item.specs && item.specs.length > 0 ? item.specs[0].value : 'Contact for details'}</p>
-                  <div className="flex items-end justify-between pt-6 border-t border-zinc-100 mt-auto">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold mb-1">Asking Price</span>
-                      <span className="text-2xl font-black tracking-tight text-zinc-900 group-hover:text-emerald-900 transition-colors">{item.price}</span>
+                  <h3 className="text-xl font-black text-zinc-900 mb-2 leading-tight group-hover:text-emerald-700 transition-colors">{item.title}</h3>
+                  <p className="text-zinc-600 text-sm mb-6 flex-grow line-clamp-2">{item.specs && item.specs.length > 0 ? item.specs[0].value : 'Contact for details'}</p>
+                  <div className="flex items-center justify-between pt-4 border-t border-zinc-200">
+                    <div>
+                      <div className="text-xs text-zinc-500 uppercase tracking-wide font-bold mb-1">Price</div>
+                      <div className="text-2xl font-black text-zinc-900">{item.price}</div>
                     </div>
-                    <div className="w-12 h-12 bg-zinc-50 border border-zinc-100 rounded-full flex items-center justify-center text-zinc-600 group-hover:bg-emerald-900 group-hover:text-white group-hover:border-emerald-900 transition-all duration-300 shadow-sm group-hover:shadow-md">
-                      <ArrowRight size={20} className="group-hover:translate-x-0.5 transition-transform" />
+                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 group-hover:bg-emerald-700 group-hover:text-white transition-all duration-300">
+                      <ArrowRight size={20} />
                     </div>
                   </div>
                 </div>
@@ -214,100 +335,122 @@ export default function Home() {
             </motion.div>
           ))}
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mt-12"
+        >
+          <Link href="/listings" className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-emerald-700 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-lg">
+            View All Listings
+            <ArrowRight size={20} />
+          </Link>
+        </motion.div>
       </section>
 
-      {/* Categories / Trust */}
-      <section className="border-t border-b border-zinc-100">
-        <div className="grid grid-cols-1 md:grid-cols-2">
-            <div className="p-12 md:p-24 flex flex-col justify-center bg-zinc-50">
-               <h2 className="text-4xl md:text-5xl font-black text-zinc-900 tracking-tight mb-6">Why Hulu Properties.</h2>
-               <p className="text-lg text-zinc-600 mb-8 leading-relaxed max-w-lg">Through an invite-only network of global partners, we source assets that never hit the public market.</p>
-               <div className="space-y-6">
-                 <div className="flex items-start gap-4">
-                    <CheckCircle2 className="text-emerald-600 mt-1 shrink-0" />
-                    <div>
-                        <h4 className="font-bold text-zinc-900 text-lg">Off-Market Access</h4>
-                        <p className="text-zinc-500 font-medium">80% of our portfolio is exclusively available to verified members.</p>
-                    </div>
-                 </div>
-                 <div className="flex items-start gap-4">
-                    <CheckCircle2 className="text-emerald-600 mt-1 shrink-0" />
-                    <div>
-                        <h4 className="font-bold text-zinc-900 text-lg">Rigorous Diligence</h4>
-                        <p className="text-zinc-500 font-medium">Every asset undergoes a 150-point inspection by independent specialists.</p>
-                    </div>
-                 </div>
-               </div>
-            </div>
-            <div className="relative h-[300px] md:h-auto md:min-h-[500px]">
-                <Image src={exclusivityImage} alt="Exclusivity" fill className="object-cover" referrerPolicy="no-referrer" />
-            </div>
-        </div>
-      </section>
+      {/* Why Choose Us */}
+      <section className="py-24 px-6 md:px-12 bg-white">
+        <div className="max-w-screen-2xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="relative h-[500px] rounded-3xl overflow-hidden shadow-2xl"
+            >
+              <Image src={exclusivityImage} alt="Exclusivity" fill className="object-cover" referrerPolicy="no-referrer" />
+            </motion.div>
 
-      {/* Value Proposition */}
-      <section className="bg-zinc-950 py-32 px-6 md:px-12 w-full text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-emerald-900/10 blur-[100px] rounded-full pointer-events-none"></div>
-        <div className="max-w-screen-2xl mx-auto relative z-10">
-          <div className="text-center mb-20 max-w-2xl mx-auto">
-             <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-6">The Pillar Of Trust</h2>
-             <p className="text-zinc-400 text-lg leading-relaxed">We do not just facilitate transactions. We empower legacy acquisition. Our services ensure structural integrity and legal assurance.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-            <motion.div 
-               whileHover={{ y: -10 }}
-               className="flex flex-col items-center bg-zinc-900/50 p-10 rounded-3xl border border-white/5"
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
             >
-              <div className="w-20 h-20 bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-400 mb-8 border border-emerald-500/20 shadow-inner">
-                <Star size={36} />
+              <div className="inline-flex items-center gap-2 mb-6 bg-emerald-100 px-4 py-2 rounded-full">
+                <Shield className="text-emerald-700" size={16} />
+                <span className="text-emerald-900 font-bold text-sm uppercase tracking-wide">Why Choose Us</span>
               </div>
-              <h3 className="text-2xl font-bold mb-4">Curated Excellence</h3>
-              <p className="text-zinc-400 font-medium leading-relaxed">Every asset on Hulu Properties undergoes rigorous inspection and vetting by our tier-one specialists.</p>
-            </motion.div>
-            <motion.div 
-               whileHover={{ y: -10 }}
-               className="flex flex-col items-center bg-zinc-900/50 p-10 rounded-3xl border border-white/5"
-            >
-              <div className="w-20 h-20 bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-400 mb-8 border border-emerald-500/20 shadow-inner">
-                <Shield size={36} />
+              <h2 className="text-4xl md:text-5xl font-black text-zinc-900 mb-6 tracking-tight">
+                Your Trusted Partner in Premium Assets
+              </h2>
+              <p className="text-zinc-600 text-lg mb-8 leading-relaxed">
+                We provide unparalleled access to exclusive properties, vehicles, and land through our global network of verified partners.
+              </p>
+
+              <div className="space-y-6">
+                <div className="flex items-start gap-4 p-4 bg-zinc-50 rounded-2xl">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="text-emerald-700" size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-zinc-900 text-lg mb-1">Verified Listings</h4>
+                    <p className="text-zinc-600">Every asset undergoes rigorous verification and quality checks</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-zinc-50 rounded-2xl">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                    <Shield className="text-emerald-700" size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-zinc-900 text-lg mb-1">Secure Transactions</h4>
+                    <p className="text-zinc-600">Bank-level security and escrow services for your peace of mind</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-zinc-50 rounded-2xl">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                    <TrendingUp className="text-emerald-700" size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-zinc-900 text-lg mb-1">Expert Guidance</h4>
+                    <p className="text-zinc-600">Dedicated specialists to guide you through every step</p>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-2xl font-bold mb-4">Secure Transactions</h3>
-              <p className="text-zinc-400 font-medium leading-relaxed">Proprietary escrow and white-glove transfer services ensure your privacy and capital are protected.</p>
-            </motion.div>
-            <motion.div 
-               whileHover={{ y: -10 }}
-               className="flex flex-col items-center bg-zinc-900/50 p-10 rounded-3xl border border-white/5"
-            >
-              <div className="w-20 h-20 bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-400 mb-8 border border-emerald-500/20 shadow-inner">
-                <Zap size={36} />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Rapid Acquisition</h3>
-              <p className="text-zinc-400 font-medium leading-relaxed">Streamlined digital closing processes tailored for high-net-worth individuals and family offices.</p>
             </motion.div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 md:py-32 px-6 md:px-12 w-full max-w-screen-2xl mx-auto text-center">
-         <div className="bg-emerald-950 text-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-24 relative overflow-hidden shadow-2xl border border-emerald-800/30">
-            <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/texture/1920/1080')] mix-blend-overlay opacity-10 hidden md:block"></div>
-            <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-r from-emerald-900/50 to-transparent pointer-events-none"></div>
-            <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center">
-                <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-8 leading-tight">Ready to Rent or Sell Your Property?</h2>
-                <p className="text-emerald-100/80 text-xl md:text-2xl font-light mb-12 max-w-2xl leading-relaxed">Connect with a senior partner today to begin your acquisitions journey or to list your house, land, or car with us.</p>
-                <div className="flex flex-col sm:flex-row gap-6">
-                  <Link href="/contact" className="bg-white text-emerald-950 px-8 md:px-10 py-4 md:py-5 rounded-full font-black text-base md:text-lg hover:bg-emerald-50 hover:scale-105 transition-all duration-300 shadow-xl shadow-emerald-950/20 active:scale-95 flex items-center justify-center gap-3">
-                     Contact a Senior Partner <ArrowRight size={22} />
-                  </Link>
-                  <Link href="/listings" className="bg-emerald-900 text-white border border-emerald-700/50 px-8 md:px-10 py-4 md:py-5 rounded-full font-black text-base md:text-lg hover:bg-emerald-800 transition-all duration-300 shadow-xl active:scale-95 flex items-center justify-center gap-3">
-                     Browse Listings
-                  </Link>
-                </div>
+      <section className="py-24 px-6 md:px-12 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-300 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
+              Ready to Get Started?
+            </h2>
+            <p className="text-emerald-100 text-xl mb-10 leading-relaxed max-w-2xl mx-auto">
+              Join thousands of satisfied clients who trust us with their premium asset transactions
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/listings"
+                className="bg-white text-emerald-900 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-emerald-50 transition-all shadow-xl hover:scale-105 flex items-center justify-center gap-3"
+              >
+                Browse Listings
+                <ArrowRight size={22} />
+              </Link>
+              <Link
+                href="/contact"
+                className="bg-emerald-700 text-white border-2 border-emerald-600 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-emerald-600 transition-all shadow-xl flex items-center justify-center gap-3"
+              >
+                Contact Us
+              </Link>
             </div>
-         </div>
+          </motion.div>
+        </div>
       </section>
     </div>
   );
 }
-
