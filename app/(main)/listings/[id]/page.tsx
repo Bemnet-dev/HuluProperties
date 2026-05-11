@@ -1,39 +1,44 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Share, Heart, Check, ChevronRight, Phone, Mail, X, Link as LinkIcon, Facebook, Linkedin, MessageCircle, Copy, Send } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
+import { supabase } from '@/lib/supabase';
 
 export default function ListingDetail() {
   const params = useParams();
   const [activeImage, setActiveImage] = useState(0);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [details, setDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock details
-  const details = {
-    title: 'The Glass Pavilion at Beverly Hills',
-    price: 'ETB 14,500,000',
-    location: '1234 Summit Ridge Dr, Beverly Hills, CA 90210',
-    type: 'Property',
-    description: 'An architectural masterpiece designed by renowned architect John Doe. This breathtaking glass pavilion offers panoramic views of the Los Angeles basin to the Pacific Ocean. Features include an infinity-edge pool, private cinema, 1000-bottle wine cellar, and a detached guest house. The residence employs sustainable energy systems while offering uncompromising luxury.',
-    images: [
-      'https://picsum.photos/seed/house1/1200/800',
-      'https://picsum.photos/seed/house2/1200/800',
-      'https://picsum.photos/seed/house3/1200/800',
-      'https://picsum.photos/seed/house4/1200/800',
-    ],
-    features: [
-      '6 Bedrooms', '8 Bathrooms', '12,500 sqft Interior', '2.5 Acres Lot', 'Infinity Pool', 'Smart Home Integration', 'Private Cinema', 'Wine Cellar'
-    ],
-    agent: {
-      name: 'Eleanor Vance',
-      role: 'Senior Partner, Luxury Estates',
-      image: 'https://picsum.photos/seed/agent1/200/200'
-    }
-  };
+  useEffect(() => {
+    const fetchListing = async () => {
+      if (!params.id) return;
+      const { data, error } = await supabase.from('listings').select('*').eq('id', params.id).single();
+      if (!error && data) {
+        setDetails({
+          ...data,
+          images: data.images || [],
+          features: data.specs ? data.specs.map((s: any) => `${s.key}: ${s.value}`) : []
+        });
+      }
+      setLoading(false);
+    };
+    fetchListing();
+  }, [params.id]);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center font-bold text-zinc-500">Loading details...</div>;
+  }
+
+  if (!details) {
+    return <div className="min-h-screen flex items-center justify-center font-bold text-zinc-500">Listing not found.</div>;
+  }
+
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
   const shareTitle = `Discover this exceptional asset: ${details.title}`;
@@ -139,7 +144,7 @@ export default function ListingDetail() {
           <div className="inline-block bg-zinc-100 px-3 py-1 rounded-full text-xs font-bold text-zinc-700 uppercase tracking-widest mb-4">
             {details.type}
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tight mb-4">{details.title}</h1>
+          <h1 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight mb-4">{details.title}</h1>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center text-lg text-zinc-600 font-medium">
               <MapPin className="mr-2 text-zinc-400" size={20} /> {details.location}
@@ -150,20 +155,26 @@ export default function ListingDetail() {
 
         {/* Gallery */}
         <div className="flex flex-col gap-4 mb-16">
-          <div className="relative w-full h-[50vh] md:h-[65vh] rounded-3xl overflow-hidden shadow-sm">
-            <Image src={details.images[activeImage]} alt="Main gallery image" fill className="object-cover transition-opacity duration-500" referrerPolicy="no-referrer" priority />
+          <div className="relative w-full h-[50vh] md:h-[65vh] rounded-3xl overflow-hidden shadow-sm bg-zinc-200 flex items-center justify-center">
+            {details.images.length > 0 ? (
+               <Image src={details.images[activeImage]} alt="Main gallery image" fill className="object-cover transition-opacity duration-500" referrerPolicy="no-referrer" priority />
+            ) : (
+               <div className="text-zinc-400 font-bold">No images available</div>
+            )}
           </div>
-          <div className="grid grid-cols-4 gap-4">
-            {details.images.map((img, idx) => (
-              <button 
-                key={idx} 
-                onClick={() => setActiveImage(idx)}
-                className={`relative h-24 md:h-40 rounded-xl overflow-hidden shadow-sm transition-all ${activeImage === idx ? 'ring-4 ring-emerald-800 opacity-100' : 'opacity-70 hover:opacity-100'}`}
-              >
-                <Image src={img} alt={`Thumbnail ${idx}`} fill className="object-cover" referrerPolicy="no-referrer" />
-              </button>
-            ))}
-          </div>
+          {details.images.length > 1 && (
+            <div className="grid grid-cols-4 gap-2 md:gap-4 overflow-x-auto">
+              {details.images.map((img: string, idx: number) => (
+                <button 
+                  key={idx} 
+                  onClick={() => setActiveImage(idx)}
+                  className={`relative h-20 md:h-40 rounded-xl overflow-hidden shadow-sm transition-all ${activeImage === idx ? 'ring-4 ring-emerald-800 opacity-100' : 'opacity-70 hover:opacity-100'}`}
+                >
+                  <Image src={img} alt={`Thumbnail ${idx}`} fill className="object-cover" referrerPolicy="no-referrer" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Content Grid */}
@@ -190,7 +201,7 @@ export default function ListingDetail() {
 
           {/* Sidebar / Contact */}
           <div>
-            <div className="bg-zinc-50 border border-zinc-200 rounded-3xl p-8 sticky top-28 shadow-sm">
+            <div className="bg-zinc-50 border border-zinc-200 rounded-3xl p-8 md:sticky top-28 shadow-sm">
               <h3 className="text-xl font-bold text-zinc-900 mb-2">Interested in this asset?</h3>
               <p className="text-zinc-500 mb-8 font-medium">Contact the owner directly to discuss acquisition or schedule a private viewing.</p>
               

@@ -69,11 +69,24 @@ export default function Home() {
     }
   };
 
-  const featured = [
-    { id: 1, title: 'The Glass Pavilion', location: 'Beverly Hills, CA', price: 'ETB 14,500,000', type: 'Property', image: 'https://picsum.photos/seed/house1/800/600', specs: '6 Beds • 8 Baths • 12,000 sqft' },
-    { id: 2, title: '2026 Porsche 911 GT3 RS', location: 'Los Angeles, CA', price: 'ETB 295,000', type: 'Vehicle', image: 'https://picsum.photos/seed/car1/800/600', specs: '4.0L Flat-6 • 518 hp • 0-60 in 2.7s' },
-    { id: 3, title: 'Coastal Cliff Estate Land', location: 'Big Sur, CA', price: 'ETB 8,200,000', type: 'Land', image: 'https://picsum.photos/seed/land1/800/600', specs: '45 Acres • Ocean Front • Permitted' },
-  ];
+  const [featured, setFeatured] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadFeatured = async () => {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('status', 'Active')
+        .order('created_at', { ascending: false })
+        .limit(3);
+        
+      if (!error && data) {
+        setFeatured(data);
+      }
+    };
+    
+    loadFeatured();
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -100,7 +113,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1, ease: 'easeOut' }}
-            className="text-5xl md:text-7xl lg:text-[7rem] font-black text-white tracking-tighter mb-8 leading-[1.0] max-w-6xl drop-shadow-2xl mx-auto"
+            className="text-4xl sm:text-5xl md:text-7xl lg:text-[7rem] font-black text-white tracking-tighter mb-8 leading-[1.0] max-w-6xl drop-shadow-2xl mx-auto"
           >
             The Premier Marketplace to <br className="hidden lg:block"/>
             Rent or Sell <span className="font-serif italic font-medium text-emerald-300">Real Estate,</span> <br className="hidden md:block"/>
@@ -173,7 +186,11 @@ export default function Home() {
                   >
                     <Bookmark size={18} className={favorites.includes(item.id.toString()) ? "text-emerald-700 fill-emerald-100" : "text-zinc-700"} />
                   </button>
-                  <Image src={item.image} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" referrerPolicy="no-referrer" />
+                  {item.images && item.images.length > 0 ? (
+                    <Image src={item.images[0]} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-full h-full bg-zinc-200 flex items-center justify-center text-zinc-400">No Image</div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 via-zinc-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 </div>
                 <div className="p-8 flex flex-col flex-grow bg-white relative z-10 pointer-events-none">
@@ -182,7 +199,7 @@ export default function Home() {
                      {item.location}
                   </div>
                   <h3 className="text-2xl font-black text-zinc-900 tracking-tight mb-2 leading-tight group-hover:text-emerald-800 transition-colors">{item.title}</h3>
-                  <p className="text-zinc-500 font-medium mb-8 flex-grow text-sm leading-relaxed">{item.specs}</p>
+                  <p className="text-zinc-500 font-medium mb-8 flex-grow text-sm leading-relaxed">{item.specs && item.specs.length > 0 ? item.specs[0].value : 'Contact for details'}</p>
                   <div className="flex items-end justify-between pt-6 border-t border-zinc-100 mt-auto">
                     <div className="flex flex-col">
                       <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold mb-1">Asking Price</span>
@@ -222,7 +239,7 @@ export default function Home() {
                  </div>
                </div>
             </div>
-            <div className="relative h-[400px] md:h-auto min-h-[500px] hidden md:block">
+            <div className="relative h-[300px] md:h-auto md:min-h-[500px]">
                 <Image src={exclusivityImage} alt="Exclusivity" fill className="object-cover" referrerPolicy="no-referrer" />
             </div>
         </div>
@@ -272,18 +289,18 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="hidden md:block py-32 px-6 md:px-12 w-full max-w-screen-2xl mx-auto text-center">
-         <div className="bg-emerald-950 text-white rounded-[3rem] p-12 md:p-24 relative overflow-hidden shadow-2xl border border-emerald-800/30">
+      <section className="py-16 md:py-32 px-6 md:px-12 w-full max-w-screen-2xl mx-auto text-center">
+         <div className="bg-emerald-950 text-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-24 relative overflow-hidden shadow-2xl border border-emerald-800/30">
             <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/texture/1920/1080')] mix-blend-overlay opacity-10 hidden md:block"></div>
             <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-r from-emerald-900/50 to-transparent pointer-events-none"></div>
             <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center">
                 <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-8 leading-tight">Ready to Rent or Sell Your Property?</h2>
                 <p className="text-emerald-100/80 text-xl md:text-2xl font-light mb-12 max-w-2xl leading-relaxed">Connect with a senior partner today to begin your acquisitions journey or to list your house, land, or car with us.</p>
                 <div className="flex flex-col sm:flex-row gap-6">
-                  <Link href="/contact" className="bg-white text-emerald-950 px-10 py-5 rounded-full font-black text-lg hover:bg-emerald-50 hover:scale-105 transition-all duration-300 shadow-xl shadow-emerald-950/20 active:scale-95 flex items-center justify-center gap-3">
-                     Contact a Senior Partner <ArrowRight size={24} />
+                  <Link href="/contact" className="bg-white text-emerald-950 px-8 md:px-10 py-4 md:py-5 rounded-full font-black text-base md:text-lg hover:bg-emerald-50 hover:scale-105 transition-all duration-300 shadow-xl shadow-emerald-950/20 active:scale-95 flex items-center justify-center gap-3">
+                     Contact a Senior Partner <ArrowRight size={22} />
                   </Link>
-                  <Link href="/listings" className="bg-emerald-900 text-white border border-emerald-700/50 px-10 py-5 rounded-full font-black text-lg hover:bg-emerald-800 transition-all duration-300 shadow-xl active:scale-95 flex items-center justify-center gap-3">
+                  <Link href="/listings" className="bg-emerald-900 text-white border border-emerald-700/50 px-8 md:px-10 py-4 md:py-5 rounded-full font-black text-base md:text-lg hover:bg-emerald-800 transition-all duration-300 shadow-xl active:scale-95 flex items-center justify-center gap-3">
                      Browse Listings
                   </Link>
                 </div>

@@ -9,25 +9,35 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
-// Mock Data
-const PRODUCTS = [
-  { id: '1', title: 'The Glass Pavilion', location: 'Beverly Hills, CA', price: 'ETB 14,500,000', type: 'Property', image: 'https://picsum.photos/seed/house1/800/600', specs: '6 Beds • 8 Baths' },
-  { id: '2', title: '2026 Porsche 911 GT3 RS', location: 'Los Angeles, CA', price: 'ETB 295,000', type: 'Vehicle', image: 'https://picsum.photos/seed/car1/800/600', specs: '4.0L Flat-6 • 518 hp' },
-  { id: '3', title: 'Coastal Cliff Estate Land', location: 'Big Sur, CA', price: 'ETB 8,200,000', type: 'Land', image: 'https://picsum.photos/seed/land1/800/600', specs: '45 Acres' },
-  { id: '4', title: 'Penthouse at 432 Park', location: 'New York, NY', price: 'ETB 35,000,000', type: 'Property', image: 'https://picsum.photos/seed/pent/800/600', specs: '4 Beds • 5 Baths' },
-  { id: '5', title: 'Rolls-Royce Phantom', location: 'Miami, FL', price: 'ETB 460,000', type: 'Vehicle', image: 'https://picsum.photos/seed/rolls/800/600', specs: '6.75L V12' },
-  { id: '6', title: 'Vineyard Development Plot', location: 'Napa Valley, CA', price: 'ETB 12,500,000', type: 'Land', image: 'https://picsum.photos/seed/vine/800/600', specs: '120 Acres' },
-];
+// Real data is fetched via Supabase
 
 export default function ListingsPage() {
   const [activeTab, setActiveTab] = useState('All');
   const [viewMode, setViewMode] = useState<'grid'|'list'>('grid');
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(true);
+  const [listings, setListings] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-
-  const filteredProducts = activeTab === 'All' ? PRODUCTS : PRODUCTS.filter(p => p.type === activeTab);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchListings = async () => {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('status', 'Active')
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setListings(data);
+      }
+      setIsLoading(false);
+    };
+    fetchListings();
+  }, []);
+
+  const filteredProducts = activeTab === 'All' ? listings : listings.filter(p => p.type === activeTab);
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -156,7 +166,11 @@ export default function ListingsPage() {
                 >
                   <Bookmark size={18} className={favorites.includes(item.id) ? "text-emerald-700 fill-emerald-100" : "text-zinc-700"} />
                 </button>
-                <Image src={item.image} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" referrerPolicy="no-referrer" />
+                {item.images && item.images.length > 0 ? (
+                  <Image src={item.images[0]} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-full h-full bg-zinc-200 flex items-center justify-center text-zinc-400">No Image</div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 via-zinc-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               </div>
               <div className={`flex flex-col justify-between bg-white relative z-10 pointer-events-none ${viewMode === 'list' ? 'flex-grow w-full sm:w-3/5 p-8' : 'flex-grow p-8'}`}>
@@ -166,7 +180,7 @@ export default function ListingsPage() {
                      {item.location}
                   </div>
                   <h3 className="text-2xl font-black text-zinc-900 tracking-tight mb-2 leading-tight group-hover:text-emerald-800 transition-colors">{item.title}</h3>
-                  <p className="text-zinc-500 font-medium mb-8 text-sm leading-relaxed">{item.specs}</p>
+                  <p className="text-zinc-500 font-medium mb-8 text-sm leading-relaxed">{item.specs && item.specs.length > 0 ? item.specs[0].value : 'Contact for details'}</p>
                 </div>
                 <div className={`flex items-end justify-between ${viewMode === 'list' ? 'mt-auto pt-8 border-t border-zinc-100' : 'mt-auto pt-6 border-t border-zinc-100'}`}>
                   <div className="flex flex-col">

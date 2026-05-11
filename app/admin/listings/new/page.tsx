@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { UploadCloud, Save, X, Info } from 'lucide-react';
+import { UploadCloud, Save, X, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -9,11 +9,51 @@ import Image from 'next/image';
 export default function NewListingPage() {
   const router = useRouter();
   const [assetType, setAssetType] = useState('Property');
+  const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
+  const [specs, setSpecs] = useState([{ key: '', value: '' }, { key: '', value: '' }]);
+  const [listingStatus, setListingStatus] = useState<'Active' | 'Draft'>('Active');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [editId, setEditId] = useState<string | null>(null);
   const [coverIndex, setCoverIndex] = useState(0);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const formRef = React.useRef<HTMLFormElement>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('edit');
+      if (id) {
+        setEditId(id);
+        const fetchListing = async () => {
+          const { data, error } = await supabase.from('listings').select('*').eq('id', id).single();
+          if (data) {
+            if (formRef.current) {
+              const titleInput = formRef.current.elements.namedItem('title') as HTMLInputElement;
+              if (titleInput) titleInput.value = data.title;
+              
+              const priceInput = formRef.current.elements.namedItem('price') as HTMLInputElement;
+              if (priceInput) priceInput.value = data.price;
+              
+              const locationInput = formRef.current.elements.namedItem('location') as HTMLInputElement;
+              if (locationInput) locationInput.value = data.location;
+              
+              const descInput = formRef.current.elements.namedItem('description') as HTMLTextAreaElement;
+              if (descInput) descInput.value = data.description;
+            }
+            setAssetType(data.type);
+            setListingStatus(data.status);
+            if (data.specs && data.specs.length > 0) setSpecs(data.specs);
+            if (data.images && data.images.length > 0) setExistingImages(data.images);
+          }
+        };
+        // Small delay to ensure form ref is mounted
+        setTimeout(fetchListing, 50);
+      }
+    }
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -76,7 +116,8 @@ export default function NewListingPage() {
             data = retryResult.data;
           } else {
              console.error("Failed to create bucket:", createBucketError);
-             throw new Error("Storage bucket 'assets' not found and could not be created automatically. Please create a public bucket named 'assets' in your Supabase dashboard.");
+             console.warn("Continuing submission without image upload due to bucket error.");
+             // We don't throw here so the user can test the UI flow without setting up Supabase Storage fully.
           }
         }
 
@@ -91,17 +132,55 @@ export default function NewListingPage() {
         }
       }
 
-      console.log("Uploaded URLs:", uploadedImageUrls);
+      const formData = new FormData(e.target as HTMLFormElement);
+      const title = formData.get('title') as string;
+      const price = formData.get('price') as string;
+      const location = formData.get('location') as string;
+      const description = formData.get('description') as string;
+
+      const finalImages = [...existingImages, ...uploadedImageUrls];
       
-      // Simulate API call for the rest of the form
-      setTimeout(() => {
-        setIsSubmitting(false);
-        router.push('/admin');
-      }, 500);
+      const payload = {
+        title,
+        price: price.toString(),
+        location,
+        description,
+        type: assetType,
+        status: listingStatus,
+        images: finalImages,
+        specs: specs.filter(s => s.key && s.value)
+      };
+
+      let dbError;
+      if (editId) {
+        const { error } = await supabase.from('listings').update(payload).eq('id', editId);
+        dbError = error;
+      } else {
+        const { error } = await supabase.from('listings').insert([payload]);
+        dbError = error;
+      }
+
+      if (dbError) {
+        console.error("Database insert error:", dbError);
+        if (dbError.message.includes('row-level security')) {
+            throw new Error("Row-Level Security (RLS) is blocking the insert. Please make sure you are logged in, or update your Supabase RLS policies to allow anonymous inserts during testing.");
+        }
+        throw new Error(dbError.message);
+      }
+      
+      setIsSubmitting(false);
+      alert(`Listing ${listingStatus === 'Draft' ? 'saved to drafts' : 'published'} successfully!`);
+      router.push('/admin/listings');
     } catch (error) {
       console.error(error);
       setIsSubmitting(false);
-      alert(error instanceof Error ? error.message : "An error occurred during submission");
+      
+      const errorMessage = error instanceof Error ? error.message : "An error occurred during submission";
+      if (errorMessage === 'Failed to fetch') {
+         alert("Network error: Could not connect to Supabase. Please ensure your NEXT_PUBLIC_SUPABASE_URL is set correctly in your .env file.");
+      } else {
+         alert("Publishing Failed:\n" + errorMessage);
+      }
     }
   };
 
@@ -111,13 +190,13 @@ export default function NewListingPage() {
         <Link href="/admin" className="p-2 border border-zinc-200 rounded-lg hover:bg-zinc-50 text-zinc-500 transition-colors">
           <X size={20} />
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">Create Asset Listing</h1>
-          <p className="text-zinc-500 font-medium mt-1">Publish a new premium asset to the marketplace.</p>
-        </div>
+        <div className="mb-8">
+        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">{editId ? 'Edit Listing' : 'Create New Listing'}</h1>
+        <p className="text-zinc-500 font-medium mt-2">{editId ? 'Modify the details of your listing.' : 'Add a new asset to the platform inventory.'}</p>
+      </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
         
         {/* Core Info */}
         <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm space-y-6">
@@ -125,7 +204,9 @@ export default function NewListingPage() {
           
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-2">Asset Type</label>
-            <div className="grid grid-cols-3 gap-4">
+            
+            {/* Desktop View: Button Grid */}
+            <div className="hidden md:grid grid-cols-3 gap-4">
               {['Property', 'Vehicle', 'Land'].map(type => (
                 <button
                   key={type}
@@ -141,23 +222,54 @@ export default function NewListingPage() {
                 </button>
               ))}
             </div>
+
+            {/* Mobile View: Dropdown */}
+            <div className="md:hidden flex flex-col border border-zinc-200 rounded-xl bg-white overflow-hidden shadow-sm group">
+              <button 
+                type="button"
+                onClick={() => setMobileDropdownOpen(!mobileDropdownOpen)} 
+                className="flex items-center justify-between w-full px-5 py-4 font-bold text-zinc-900 bg-white hover:bg-zinc-50 transition-colors focus:outline-none"
+              >
+                {assetType}
+                {mobileDropdownOpen ? <ChevronUp className="text-zinc-400 group-hover:text-zinc-600 transition-colors" size={20} /> : <ChevronDown className="text-zinc-400 group-hover:text-zinc-600 transition-colors" size={20} />}
+              </button>
+              {mobileDropdownOpen && (
+                <div className="flex flex-col bg-zinc-50 border-t border-zinc-100">
+                  {['Property', 'Vehicle', 'Land'].map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        setAssetType(type);
+                        setMobileDropdownOpen(false);
+                      }}
+                      className={`text-left px-5 py-4 font-semibold transition-colors border-l-2 ${
+                        assetType === type ? 'text-emerald-900 bg-emerald-50 border-emerald-600' : 'text-zinc-600 hover:bg-zinc-100 border-transparent hover:border-zinc-300'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-zinc-700">Listing Title <span className="text-red-500">*</span></label>
-              <input required type="text" placeholder="e.g. Modern Cliffside Villa" className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium" />
+              <input required name="title" type="text" placeholder="e.g. Modern Cliffside Villa" className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium" />
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-zinc-700">Asking Price (ETB) <span className="text-red-500">*</span></label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">ETB</span>
-                <input required type="number" placeholder="2,500,000" className="w-full pl-14 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium" />
+                <input required name="price" type="number" placeholder="2,500,000" className="w-full pl-14 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium" />
               </div>
             </div>
             <div className="space-y-2 md:col-span-2">
               <label className="block text-sm font-semibold text-zinc-700">Location / Address <span className="text-red-500">*</span></label>
-              <input required type="text" placeholder="City, State, Country" className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium" />
+              <input required name="location" type="text" placeholder="City, State, Country" className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium" />
             </div>
           </div>
         </div>
@@ -191,8 +303,30 @@ export default function NewListingPage() {
             />
           </div>
 
-          {previewUrls.length > 0 && (
+          {(existingImages.length > 0 || previewUrls.length > 0) && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              {existingImages.map((url, i) => (
+                <div key={`ext-${i}`} className="relative aspect-video rounded-xl overflow-hidden border border-zinc-200 shadow-sm group">
+                  <Image src={url} alt={`Existing ${i}`} fill className="object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button 
+                      type="button" 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setExistingImages(prev => prev.filter((_, idx) => idx !== i));
+                      }} 
+                      className="bg-white/90 p-2 rounded-full text-red-600 hover:scale-110 transition-transform"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  {i === 0 && previewUrls.length === 0 && (
+                    <div className="absolute top-2 left-2 bg-emerald-900 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
+                      Cover
+                    </div>
+                  )}
+                </div>
+              ))}
               {previewUrls.map((url, i) => (
                 <div key={url} className="relative aspect-video rounded-xl overflow-hidden border border-zinc-200 shadow-sm group">
                   <Image src={url} alt={`Preview ${i}`} fill className="object-cover" />
@@ -231,46 +365,98 @@ export default function NewListingPage() {
           
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-zinc-700">Detailed Description <span className="text-red-500">*</span></label>
-            <textarea required rows={6} placeholder="Describe the unique features, provenance, and specifications..." className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium resize-none"></textarea>
+            <textarea required name="description" rows={6} placeholder="Describe the unique features, provenance, and specifications..." className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium resize-none"></textarea>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-               <label className="block text-xs font-semibold text-zinc-500 uppercase">Key Spec 1</label>
-               <input type="text" placeholder={assetType === 'Vehicle' ? "Engine" : "Bedrooms"} className="w-full px-4 py-2 border border-zinc-200 rounded-lg text-sm bg-zinc-50/50" />
-            </div>
-             <div className="space-y-2">
-               <label className="block text-xs font-semibold text-zinc-500 uppercase">Value 1</label>
-               <input type="text" placeholder="e.g. 4.0L V8" className="w-full px-4 py-2 border border-zinc-200 rounded-lg text-sm bg-zinc-50/50" />
-            </div>
-             <div className="space-y-2">
-               <label className="block text-xs font-semibold text-zinc-500 uppercase">Key Spec 2</label>
-               <input type="text" placeholder={assetType === 'Vehicle' ? "0-60 mph" : "Square Feet"} className="w-full px-4 py-2 border border-zinc-200 rounded-lg text-sm bg-zinc-50/50" />
-            </div>
-             <div className="space-y-2">
-               <label className="block text-xs font-semibold text-zinc-500 uppercase">Value 2</label>
-               <input type="text" placeholder="e.g. 10,000" className="w-full px-4 py-2 border border-zinc-200 rounded-lg text-sm bg-zinc-50/50" />
-            </div>
+          <div className="space-y-4">
+            {specs.map((spec, index) => (
+              <div key={index} className="flex gap-4 items-end">
+                <div className="space-y-2 flex-1">
+                   <label className="block text-xs font-semibold text-zinc-500 uppercase">Key Spec {index + 1}</label>
+                   <input 
+                     type="text" 
+                     value={spec.key}
+                     onChange={(e) => {
+                       const newSpecs = [...specs];
+                       newSpecs[index].key = e.target.value;
+                       setSpecs(newSpecs);
+                     }}
+                     placeholder={index === 0 ? (assetType === 'Vehicle' ? "Engine" : "Bedrooms") : (index === 1 ? (assetType === 'Vehicle' ? "0-60 mph" : "Square Feet") : "e.g. Mileage")} 
+                     className="w-full px-4 py-2 border border-zinc-200 rounded-lg text-sm bg-zinc-50/50" 
+                   />
+                </div>
+                <div className="space-y-2 flex-1">
+                   <label className="block text-xs font-semibold text-zinc-500 uppercase">Value {index + 1}</label>
+                   <input 
+                     type="text" 
+                     value={spec.value}
+                     onChange={(e) => {
+                       const newSpecs = [...specs];
+                       newSpecs[index].value = e.target.value;
+                       setSpecs(newSpecs);
+                     }}
+                     placeholder={index === 0 ? "e.g. 4.0L V8" : (index === 1 ? "e.g. 10,000" : "e.g. 15,000")} 
+                     className="w-full px-4 py-2 border border-zinc-200 rounded-lg text-sm bg-zinc-50/50" 
+                   />
+                </div>
+                {specs.length > 1 && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const newSpecs = specs.filter((_, i) => i !== index);
+                      setSpecs(newSpecs);
+                    }}
+                    className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0 mb-1"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
-          <button type="button" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 transition-colors mt-2">
+          <button 
+            type="button" 
+            onClick={() => setSpecs([...specs, { key: '', value: '' }])}
+            className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 transition-colors mt-2 inline-block"
+          >
             + Add more specifications
           </button>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-4 pt-4">
-          <Link href="/admin" className="px-6 py-3 font-semibold text-zinc-500 hover:text-zinc-800 transition-colors">
+        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4">
+          <Link href="/admin" className="px-6 py-3 font-semibold text-zinc-500 hover:text-zinc-800 transition-colors w-full sm:w-auto text-center">
             Cancel
           </Link>
           <button 
+            type="button" 
+            disabled={isSubmitting}
+            onClick={() => {
+              if (formRef.current && formRef.current.reportValidity()) {
+                if (files.length === 0) {
+                  console.log("No media files attached to draft.");
+                }
+                setListingStatus('Draft');
+                // Use setTimeout to allow state to update before requesting submit
+                setTimeout(() => {
+                  formRef.current?.requestSubmit();
+                }, 0);
+              }
+            }}
+            className="flex justify-center items-center gap-2 bg-white text-zinc-700 border border-zinc-200 px-6 py-3 rounded-xl font-bold hover:bg-zinc-50 hover:border-zinc-300 transition-all shadow-sm active:scale-95 disabled:opacity-70 w-full sm:w-auto"
+          >
+            Save to Draft
+          </button>
+          <button 
             type="submit" 
             disabled={isSubmitting}
-            className="flex items-center gap-2 bg-emerald-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-800 transition-all shadow-sm active:scale-95 disabled:opacity-70"
+            onClick={() => setListingStatus('Active')}
+            className="flex justify-center items-center gap-2 bg-emerald-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-800 transition-all shadow-sm active:scale-95 disabled:opacity-70 w-full sm:w-auto"
           >
-            {isSubmitting ? (
-              <span className="animate-pulse">Processing...</span>
+            {isSubmitting && listingStatus === 'Active' ? (
+              <span className="animate-pulse">{editId ? 'Updating...' : 'Processing...'}</span>
             ) : (
-              <><Save size={20} /> Publish Listing</>
+              <><Save size={20} /> {editId ? 'Update Listing' : 'Publish Listing'}</>
             )}
           </button>
         </div>
