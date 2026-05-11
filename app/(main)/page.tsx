@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Star, Shield, Zap, CheckCircle2, TrendingUp, MapPin, Home, Car, Landmark, Bookmark, Sparkles } from 'lucide-react';
+import { ArrowRight, Star, Shield, Zap, CheckCircle2, TrendingUp, MapPin, Home as HomeIcon, Car, Landmark, Bookmark, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 import exclusivityImage from "@/src/assets/images/regenerated_image_1777919477660.png";
 import heroImage from "@/src/assets/images/regenerated_image_1777920930012.png";
@@ -90,7 +90,7 @@ export default function Home() {
 
   const categories = [
     {
-      icon: Home,
+      icon: HomeIcon,
       title: "Premium Properties",
       description: "Luxury homes, penthouses, and estates",
       count: "150+ Listings"
