@@ -230,26 +230,29 @@ export default function Home() {
               className="hidden lg:flex flex-col gap-4"
             >
               {categories.map((category, index) => (
-                <motion.div
+                <Link
                   key={category.title}
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
-                  whileHover={{ x: 10, scale: 1.02 }}
-                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 hover:bg-white/15 transition-all cursor-pointer"
+                  href="/listings"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
-                      <category.icon className="text-emerald-300" size={28} strokeWidth={2} />
+                  <motion.div
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
+                    className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 cursor-pointer"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
+                        <category.icon className="text-emerald-300" size={28} strokeWidth={2} />
+                      </div>
+                      <div className="flex-grow">
+                        <h3 className="text-xl font-bold text-white mb-1">{category.title}</h3>
+                        <p className="text-zinc-300 text-sm mb-2">{category.description}</p>
+                        <span className="text-emerald-400 text-xs font-bold">{category.count}</span>
+                      </div>
+                      <ArrowRight className="text-white/50" size={20} />
                     </div>
-                    <div className="flex-grow">
-                      <h3 className="text-xl font-bold text-white mb-1">{category.title}</h3>
-                      <p className="text-zinc-300 text-sm mb-2">{category.description}</p>
-                      <span className="text-emerald-400 text-xs font-bold">{category.count}</span>
-                    </div>
-                    <ArrowRight className="text-white/50 group-hover:text-white transition-colors" size={20} />
-                  </div>
-                </motion.div>
+                  </motion.div>
+                </Link>
               ))}
             </motion.div>
           </div>
@@ -347,10 +350,10 @@ export default function Home() {
             <ArrowRight size={20} />
           </Link>
         </motion.div>
-      </section>
+      </section >
 
       {/* Why Choose Us */}
-      <section className="py-24 px-6 md:px-12 bg-white">
+      < section className="py-24 px-6 md:px-12 bg-white" >
         <div className="max-w-screen-2xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <motion.div
@@ -412,10 +415,10 @@ export default function Home() {
             </motion.div>
           </div>
         </div>
-      </section>
+      </section >
 
       {/* CTA Section */}
-      <section className="py-24 px-6 md:px-12 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 relative overflow-hidden">
+      < section className="py-24 px-6 md:px-12 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 relative overflow-hidden" >
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-300 rounded-full blur-3xl"></div>
@@ -450,7 +453,7 @@ export default function Home() {
             </div>
           </motion.div>
         </div>
-      </section>
-    </div>
+      </section >
+    </div >
   );
 }

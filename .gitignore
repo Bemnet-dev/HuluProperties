@@ -5,3 +5,8 @@ coverage/
 *.log
 .env*
 !.env.example
+out/
+dist/
+build/
+.vercel
+.netlify

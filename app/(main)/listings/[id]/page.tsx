@@ -188,7 +188,7 @@ export default function ListingDetail() {
 
             <h2 className="text-2xl font-bold text-zinc-900 mb-6">Key Specifications</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
-              {details.features.map((feature, i) => (
+              {details.features.map((feature: string, i: number) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="bg-emerald-50 text-emerald-800 p-1.5 rounded-full flex-shrink-0">
                     <Check size={16} strokeWidth={3} />

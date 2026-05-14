@@ -14,23 +14,25 @@ export default function AdminSidebar({ mobileOpen = false, onClose }: AdminSideb
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const userName = user?.email ? user.email.split('@')[0] : 'Admin';
-  const formattedName = userName.charAt(0).toUpperCase() + userName.slice(1);
+
+  // Get display name from user metadata, fallback to email username
+  const displayName = user?.user_metadata?.full_name ||
+    (user?.email ? user.email.split('@')[0] : 'Admin');
+  const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
 
   const links = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/listings", label: "Manage Listings", icon: List },
-    { href: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
   const sidebarContent = (
     <div className="h-full flex flex-col p-4 gap-2">
       {/* Mobile close button */}
       <div className="flex items-center justify-between mb-4 mt-2 px-2">
-        <div>
+        <Link href="/" className="hover:opacity-80 transition-opacity">
           <h1 className="text-lg font-black text-emerald-900 tracking-tighter uppercase">Hulu Properties</h1>
           <p className="text-zinc-500 mt-0.5 text-xs uppercase tracking-widest font-semibold">Admin Console</p>
-        </div>
+        </Link>
         {onClose && (
           <button onClick={onClose} className="md:hidden p-2 text-zinc-400 hover:text-zinc-900 transition-colors">
             <X size={22} />

@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2, Menu } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, loading } = useAuth();
@@ -42,7 +43,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Menu size={24} />
           </button>
-          <span className="text-base font-black text-emerald-900 uppercase tracking-tighter">Hulu Properties</span>
+          <Link href="/" className="text-base font-black text-emerald-900 uppercase tracking-tighter hover:text-emerald-700 transition-colors">
+            Hulu Properties
+          </Link>
         </div>
 
         {children}

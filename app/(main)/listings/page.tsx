@@ -205,7 +205,7 @@ export default function ListingsPage() {
                   onClick={(e) => toggleFavorite(e, item.id)}
                   className="absolute top-5 right-5 z-20 p-2.5 bg-white/95 backdrop-blur-md rounded-full transition-all duration-300 hover:bg-emerald-50 hover:scale-110 shadow-[0_4px_20px_rgba(0,0,0,0.1)]"
                 >
-                  <Bookmark size={18} className={favorites.includes(item.id) ? "text-emerald-700 fill-emerald-100" : "text-zinc-700"} />
+                  <Bookmark size={18} className={favorites.includes(item.id) ? "text-emerald-700 fill-emerald-700" : "text-zinc-700"} />
                 </button>
                 {item.images && item.images.length > 0 ? (
                   <Image src={item.images[0]} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" referrerPolicy="no-referrer" />
