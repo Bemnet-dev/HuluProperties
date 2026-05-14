@@ -1,14 +1,27 @@
 @import "tailwindcss";
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
+@theme {
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif), ui-serif, Georgia, serif;
+  
+  --color-brand-emerald: #064e3b;
+  --color-brand-zinc: #18181b;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
-.scrollbar-hide {
+/* Base Styles */
+@layer base {
+  body {
+    @apply antialiased text-zinc-900 bg-zinc-50;
+  }
+}
+
+/* Utilities */
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
     -ms-overflow-style: none;
-    /* IE and Edge */
     scrollbar-width: none;
-    /* Firefox */
+  }
 }
