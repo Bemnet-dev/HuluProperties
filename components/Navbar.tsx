@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { Bell, LogOut, Bookmark, Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bell, LogOut, Bookmark, Menu, X, ChevronDown, ChevronUp, User as UserIcon, LayoutDashboard, Settings } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
@@ -11,6 +11,7 @@ export default function Navbar() {
   const { user, isAdmin, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [assetsDropdownOpen, setAssetsDropdownOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   return (
     <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-xl border-b border-zinc-200/50 shadow-sm">
@@ -59,27 +60,85 @@ export default function Navbar() {
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-6">
           {user ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
               {isAdmin && (
                 <Link
                   href="/admin/listings/new"
-                  className="text-emerald-900 font-bold uppercase tracking-widest text-xs hover:text-emerald-700 transition-all duration-300 hover:scale-105"
+                  className="text-emerald-900 font-bold uppercase tracking-widest text-[10px] hover:text-emerald-700 transition-all duration-300 hover:scale-105 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100"
                 >
                   List Asset
                 </Link>
               )}
-              <Link
-                href="/favorites"
-                className="flex text-zinc-700 hover:text-emerald-900 transition-all duration-300 gap-1.5 items-center text-xs font-bold uppercase tracking-widest hover:scale-105 group"
-              >
-                <Bookmark size={16} className="text-emerald-700 fill-emerald-100 group-hover:fill-emerald-700 transition-all" />
-                Saved
-              </Link>
+
+              <div className="relative">
+                <button
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  onBlur={() => setTimeout(() => setProfileOpen(false), 200)}
+                  className="flex items-center gap-3 p-1 pr-3 rounded-full hover:bg-zinc-50 border border-transparent hover:border-zinc-200 transition-all duration-300 group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-emerald-900 flex items-center justify-center text-white shadow-sm group-hover:shadow-md transition-all">
+                    <UserIcon size={20} />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-[11px] font-black text-zinc-900 uppercase tracking-wider leading-none">
+                      {user.user_metadata?.full_name?.split(' ')[0] || 'Account'}
+                    </span>
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
+                      {isAdmin ? 'Admin' : 'Member'}
+                    </span>
+                  </div>
+                  <ChevronDown size={14} className={`text-zinc-400 transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {profileOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-3 w-64 bg-white rounded-[2rem] shadow-2xl border border-zinc-100 py-4 z-50 overflow-hidden"
+                    >
+                      <div className="px-6 py-4 border-b border-zinc-50 mb-2">
+                        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Signed in as</p>
+                        <p className="text-sm font-black text-zinc-900 truncate">{user.email}</p>
+                      </div>
+
+                      <div className="px-2">
+                        <Link
+                          href="/favorites"
+                          className="flex items-center gap-3 px-4 py-3 rounded-2xl text-zinc-600 hover:text-emerald-900 hover:bg-emerald-50/50 transition-all group"
+                        >
+                          <Bookmark size={18} className="text-zinc-400 group-hover:text-emerald-700 transition-colors" />
+                          <span className="text-sm font-bold uppercase tracking-wider">Saved Assets</span>
+                        </Link>
+
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-zinc-600 hover:text-emerald-900 hover:bg-emerald-50/50 transition-all group"
+                          >
+                            <LayoutDashboard size={18} className="text-zinc-400 group-hover:text-emerald-700 transition-colors" />
+                            <span className="text-sm font-bold uppercase tracking-wider">Admin Dashboard</span>
+                          </Link>
+                        )}
+
+                        <button
+                          onClick={() => signOut()}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-red-500 hover:text-red-700 hover:bg-red-50 transition-all group mt-2"
+                        >
+                          <LogOut size={18} className="text-red-400 group-hover:text-red-600 transition-colors" />
+                          <span className="text-sm font-bold uppercase tracking-wider">Sign Out</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           ) : (
             <Link
               href="/login"
-              className="bg-emerald-900 text-white px-6 py-2.5 rounded-full font-bold hover:bg-emerald-800 transition-all duration-300 shadow-sm hover:shadow-lg text-xs uppercase tracking-wider hover:scale-105 active:scale-95"
+              className="bg-emerald-900 text-white px-8 py-3 rounded-full font-bold hover:bg-emerald-800 transition-all duration-300 shadow-sm hover:shadow-lg text-xs uppercase tracking-widest hover:scale-105 active:scale-95"
             >
               Login
             </Link>

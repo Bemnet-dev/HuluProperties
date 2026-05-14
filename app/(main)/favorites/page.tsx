@@ -38,14 +38,17 @@ export default function FavoritesPage() {
           setFavoriteIds(ids);
 
           // Fetch actual listings
-          if (ids.length > 0) {
+          // Filter valid UUIDs to prevent PostgreSQL errors when querying the listings table
+          const validIds = ids.filter(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id));
+
+          if (validIds.length > 0) {
             const { data: listingsData, error: listingsError } = await supabase
               .from('listings')
               .select('*')
-              .in('id', ids);
+              .in('id', validIds);
 
             if (listingsError) {
-              console.error('Error fetching listings:', listingsError);
+              console.error('Error fetching listings:', listingsError.message || listingsError);
             } else {
               setListings(listingsData || []);
             }
