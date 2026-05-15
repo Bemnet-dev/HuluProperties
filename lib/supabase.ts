@@ -1,25 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
 
 // Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Missing Supabase environment variables!');
-    console.error('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'Set' : 'Missing');
-    console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Set' : 'Missing');
+const isConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!isConfigured) {
+    console.warn('⚠️ Supabase environment variables are missing! Using placeholders for build time.');
+    console.warn('Make sure to set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env file.');
 }
 
 // Check if using placeholder values
-if (supabaseUrl.includes('placeholder') || supabaseAnonKey === 'placeholder') {
-    console.warn('⚠️ Using placeholder Supabase credentials. Please update .env.local with your actual credentials.');
+if (supabaseUrl.includes('placeholder') || supabaseAnonKey.includes('placeholder')) {
+    if (process.env.NODE_ENV === 'production' && isConfigured) {
+        // This shouldn't happen if isConfigured is true, but just in case
+    }
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
+        persistSession: typeof window !== 'undefined', // Only persist in browser
+        autoRefreshToken: typeof window !== 'undefined',
+        detectSessionInUrl: typeof window !== 'undefined',
     },
 });
 
