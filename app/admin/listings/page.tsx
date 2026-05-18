@@ -5,6 +5,8 @@ import { Plus, Search, Filter, Edit, Trash2, MoreHorizontal, ChevronDown, Chevro
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 function StatusBadge({ status }: { status: string }) {
   return (
@@ -25,6 +27,8 @@ export default function AdminListingsPage() {
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const toast = useToast();
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -52,7 +56,15 @@ export default function AdminListingsPage() {
   });
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to permanently delete this listing and its images?')) {
+    const confirmed = await confirm({
+      title: 'Delete Listing?',
+      message: 'This will permanently delete this listing and all associated images. This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep it',
+      variant: 'danger',
+    });
+
+    if (confirmed) {
       // Find the listing to get its images
       const listingToDelete = listings.find(l => l.id === id);
       
@@ -72,9 +84,10 @@ export default function AdminListingsPage() {
       // Delete the database record
       const { error } = await supabase.from('listings').delete().eq('id', id);
       if (error) {
-        alert('Error deleting listing: ' + error.message);
+        toast.error('Delete Failed', error.message);
       } else {
         setListings(listings.filter(l => l.id !== id));
+        toast.success('Listing Deleted', 'The listing has been permanently removed.');
       }
     }
   };

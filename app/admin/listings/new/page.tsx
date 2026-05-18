@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
+import { useToast } from '@/components/Toast';
 
 export default function NewListingPage() {
   const router = useRouter();
+  const toast = useToast();
   const [assetType, setAssetType] = useState('Property');
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
   const [specs, setSpecs] = useState([{ key: '', value: '' }, { key: '', value: '' }]);
@@ -169,7 +171,10 @@ export default function NewListingPage() {
       }
       
       setIsSubmitting(false);
-      alert(`Listing ${listingStatus === 'Draft' ? 'saved to drafts' : 'published'} successfully!`);
+      toast.success(
+        listingStatus === 'Draft' ? 'Saved to Drafts' : 'Listing Published',
+        listingStatus === 'Draft' ? 'Your listing has been saved as a draft.' : 'Your listing is now live!'
+      );
       router.push('/admin/listings');
     } catch (error) {
       console.error(error);
@@ -177,9 +182,9 @@ export default function NewListingPage() {
       
       const errorMessage = error instanceof Error ? error.message : "An error occurred during submission";
       if (errorMessage === 'Failed to fetch') {
-         alert("Network error: Could not connect to Supabase. Please ensure your NEXT_PUBLIC_SUPABASE_URL is set correctly in your .env file.");
+         toast.error('Network Error', 'Could not connect to Supabase. Please check your NEXT_PUBLIC_SUPABASE_URL in .env.');
       } else {
-         alert("Publishing Failed:\n" + errorMessage);
+         toast.error('Publishing Failed', errorMessage);
       }
     }
   };
