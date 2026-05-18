@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import { useToast } from '@/components/Toast';
+import LocationInput from '@/components/LocationInput';
+import PriceInput from '@/components/PriceInput';
+import TitleInput from '@/components/TitleInput';
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -20,6 +23,9 @@ export default function NewListingPage() {
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [editId, setEditId] = useState<string | null>(null);
   const [coverIndex, setCoverIndex] = useState(0);
+  const [editPrice, setEditPrice] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editTitle, setEditTitle] = useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const formRef = React.useRef<HTMLFormElement>(null);
 
@@ -33,18 +39,12 @@ export default function NewListingPage() {
           const { data, error } = await supabase.from('listings').select('*').eq('id', id).single();
           if (data) {
             if (formRef.current) {
-              const titleInput = formRef.current.elements.namedItem('title') as HTMLInputElement;
-              if (titleInput) titleInput.value = data.title;
-              
-              const priceInput = formRef.current.elements.namedItem('price') as HTMLInputElement;
-              if (priceInput) priceInput.value = data.price;
-              
-              const locationInput = formRef.current.elements.namedItem('location') as HTMLInputElement;
-              if (locationInput) locationInput.value = data.location;
-              
               const descInput = formRef.current.elements.namedItem('description') as HTMLTextAreaElement;
               if (descInput) descInput.value = data.description;
             }
+            setEditTitle(data.title);
+            setEditPrice(data.price);
+            setEditLocation(data.location);
             setAssetType(data.type);
             setListingStatus(data.status);
             if (data.specs && data.specs.length > 0) setSpecs(data.specs);
@@ -263,18 +263,15 @@ export default function NewListingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-zinc-700">Listing Title <span className="text-red-500">*</span></label>
-              <input required name="title" type="text" placeholder="e.g. Modern Cliffside Villa" className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium" />
+              <TitleInput name="title" required defaultValue={editTitle} assetType={assetType} placeholder="e.g. Modern Cliffside Villa" />
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-zinc-700">Asking Price (ETB) <span className="text-red-500">*</span></label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">ETB</span>
-                <input required name="price" type="number" placeholder="2,500,000" className="w-full pl-14 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium" />
-              </div>
+              <PriceInput name="price" required defaultValue={editPrice} />
             </div>
             <div className="space-y-2 md:col-span-2">
               <label className="block text-sm font-semibold text-zinc-700">Location / Address <span className="text-red-500">*</span></label>
-              <input required name="location" type="text" placeholder="City, State, Country" className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-800 focus:border-transparent outline-none bg-zinc-50/50 font-medium" />
+              <LocationInput name="location" required defaultValue={editLocation} placeholder="Search for a location..." />
             </div>
           </div>
         </div>
