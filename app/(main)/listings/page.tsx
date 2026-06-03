@@ -1,15 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Search, MapPin, Grid3X3, List as ListIcon, Filter, ArrowRight, Bookmark } from 'lucide-react';
+import { Search, MapPin, Grid3X3, List as ListIcon, Filter, ArrowRight, Bookmark, X, SlidersHorizontal, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 // Real data is fetched via Supabase
+
+interface FilterState {
+  searchQuery: string;
+  priceMin: number;
+  priceMax: number;
+  location: string;
+  sortBy: 'newest' | 'price-low' | 'price-high' | 'title';
+}
 
 export default function ListingsPage() {
   const [activeTab, setActiveTab] = useState('All');
@@ -20,6 +28,35 @@ export default function ListingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const router = useRouter();
+
+  const [filters, setFilters] = useState<FilterState>({
+    searchQuery: '',
+    priceMin: 0,
+    priceMax: 10000000,
+    location: '',
+    sortBy: 'newest'
+  });
+
+  // Calculate min and max prices from listings
+  const priceRange = useMemo(() => {
+    if (listings.length === 0) return { min: 0, max: 10000000 };
+
+    const prices = listings.map(listing => {
+      const priceStr = listing.price?.replace(/[^0-9]/g, '') || '0';
+      return parseInt(priceStr, 10);
+    }).filter(price => !isNaN(price) && price > 0);
+
+    return {
+      min: Math.min(...prices, 0),
+      max: Math.max(...prices, 10000000)
+    };
+  }, [listings]);
+
+  // Get unique locations
+  const uniqueLocations = useMemo(() => {
+    const locations = listings.map(l => l.location).filter(Boolean);
+    return Array.from(new Set(locations)).sort();
+  }, [listings]);
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -37,7 +74,53 @@ export default function ListingsPage() {
     fetchListings();
   }, []);
 
-  const filteredProducts = activeTab === 'All' ? listings : listings.filter(p => p.type === activeTab);
+  // Advanced filtering logic
+  const filteredProducts = useMemo(() => {
+    let filtered = activeTab === 'All' ? listings : listings.filter(p => p.type === activeTab);
+
+    // Search filter
+    if (filters.searchQuery.trim()) {
+      const query = filters.searchQuery.toLowerCase();
+      filtered = filtered.filter(item =>
+        item.title?.toLowerCase().includes(query) ||
+        item.location?.toLowerCase().includes(query) ||
+        item.type?.toLowerCase().includes(query)
+      );
+    }
+
+    // Location filter
+    if (filters.location) {
+      filtered = filtered.filter(item => item.location === filters.location);
+    }
+
+    // Price filter
+    filtered = filtered.filter(item => {
+      const priceStr = item.price?.replace(/[^0-9]/g, '') || '0';
+      const price = parseInt(priceStr, 10);
+      return price >= filters.priceMin && price <= filters.priceMax;
+    });
+
+    // Sort
+    filtered = [...filtered].sort((a, b) => {
+      switch (filters.sortBy) {
+        case 'price-low':
+          const priceA = parseInt(a.price?.replace(/[^0-9]/g, '') || '0', 10);
+          const priceB = parseInt(b.price?.replace(/[^0-9]/g, '') || '0', 10);
+          return priceA - priceB;
+        case 'price-high':
+          const priceA2 = parseInt(a.price?.replace(/[^0-9]/g, '') || '0', 10);
+          const priceB2 = parseInt(b.price?.replace(/[^0-9]/g, '') || '0', 10);
+          return priceB2 - priceA2;
+        case 'title':
+          return (a.title || '').localeCompare(b.title || '');
+        case 'newest':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return filtered;
+  }, [listings, activeTab, filters]);
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -103,26 +186,39 @@ export default function ListingsPage() {
 
           {/* Search and Filters Bar */}
           <div className="flex flex-col gap-4 w-full">
-            {/* Mobile Filter Toggle & Search Row */}
-            <div className="flex w-full gap-3 items-center lg:hidden">
+            {/* Search Bar and Filter Toggle */}
+            <div className="flex w-full gap-3 items-center">
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`flex items-center justify-center gap-2 border-2 px-5 py-3 rounded-xl transition-all shadow-sm font-bold whitespace-nowrap ${showFilters ? 'bg-emerald-800 border-emerald-800 text-white' : 'bg-white border-zinc-200 text-zinc-700 hover:border-emerald-800'}`}
               >
-                <Filter size={20} strokeWidth={2.5} />
-                <span>Filter</span>
+                <SlidersHorizontal size={20} strokeWidth={2.5} />
+                <span>Filters</span>
+                {(filters.location || filters.priceMin > priceRange.min || filters.priceMax < priceRange.max || activeTab !== 'All') && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                )}
               </button>
               <div className="relative flex-grow">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search by location or name..."
+                  value={filters.searchQuery}
+                  onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
                   className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-emerald-800 bg-white shadow-sm font-medium"
                 />
               </div>
+              <div className="hidden lg:flex bg-white border border-zinc-200 rounded-xl p-1 shadow-sm">
+                <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-emerald-50 text-emerald-800' : 'text-zinc-400 hover:text-zinc-900'}`}>
+                  <Grid3X3 size={20} />
+                </button>
+                <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-emerald-50 text-emerald-800' : 'text-zinc-400 hover:text-zinc-900'}`}>
+                  <ListIcon size={20} />
+                </button>
+              </div>
             </div>
 
-            {/* Category Filter Pills - Mobile */}
+            {/* Advanced Filters Panel */}
             <AnimatePresence>
               {showFilters && (
                 <motion.div
@@ -130,56 +226,222 @@ export default function ListingsPage() {
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="lg:hidden overflow-hidden"
+                  className="overflow-hidden"
                 >
-                  <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {['All', 'Property', 'Vehicle', 'Land'].map((tab) => (
+                  <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-lg">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                        <SlidersHorizontal size={20} className="text-emerald-700" />
+                        Advanced Filters
+                      </h3>
                       <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-6 py-3 rounded-full text-sm font-bold transition-all whitespace-nowrap border-2 ${activeTab === tab ? 'bg-emerald-800 text-white border-emerald-800 shadow-lg scale-105' : 'bg-white text-zinc-700 border-zinc-200 hover:border-emerald-800 hover:text-emerald-800'}`}
+                        onClick={() => {
+                          setActiveTab('All');
+                          setFilters({
+                            searchQuery: '',
+                            priceMin: priceRange.min,
+                            priceMax: priceRange.max,
+                            location: '',
+                            sortBy: 'newest'
+                          });
+                        }}
+                        className="text-sm text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1"
                       >
-                        {tab}
+                        <X size={16} />
+                        Clear All
                       </button>
-                    ))}
+                    </div>
+
+                    {/* Category Selection */}
+                    <div className="mb-6 pb-6 border-b border-zinc-200">
+                      <label className="block text-sm font-bold text-zinc-700 mb-3">
+                        Category
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {['All', 'Property', 'Vehicle', 'Land'].map((tab) => (
+                          <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === tab ? 'bg-emerald-800 text-white shadow-md' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                          >
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Price Range Filter */}
+                      <div className="space-y-3">
+                        <label className="block text-sm font-bold text-zinc-700 flex items-center gap-2">
+                          <DollarSign size={16} className="text-emerald-700" />
+                          Price Range
+                        </label>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              placeholder="Min"
+                              value={filters.priceMin || ''}
+                              onChange={(e) => setFilters({ ...filters, priceMin: parseInt(e.target.value) || 0 })}
+                              className="w-full px-3 py-2 rounded-lg border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-transparent text-sm"
+                            />
+                            <span className="text-zinc-400">-</span>
+                            <input
+                              type="number"
+                              placeholder="Max"
+                              value={filters.priceMax === priceRange.max ? '' : filters.priceMax}
+                              onChange={(e) => setFilters({ ...filters, priceMax: parseInt(e.target.value) || priceRange.max })}
+                              className="w-full px-3 py-2 rounded-lg border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-transparent text-sm"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <input
+                              type="range"
+                              min={priceRange.min}
+                              max={priceRange.max}
+                              value={filters.priceMin}
+                              onChange={(e) => setFilters({ ...filters, priceMin: parseInt(e.target.value) })}
+                              className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-700"
+                            />
+                            <input
+                              type="range"
+                              min={priceRange.min}
+                              max={priceRange.max}
+                              value={filters.priceMax}
+                              onChange={(e) => setFilters({ ...filters, priceMax: parseInt(e.target.value) })}
+                              className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-700"
+                            />
+                          </div>
+                          <div className="text-xs text-zinc-500 flex justify-between">
+                            <span>${filters.priceMin.toLocaleString()}</span>
+                            <span>${filters.priceMax === priceRange.max ? 'Max' : filters.priceMax.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Location Filter */}
+                      <div className="space-y-3">
+                        <label className="block text-sm font-bold text-zinc-700 flex items-center gap-2">
+                          <MapPin size={16} className="text-emerald-700" />
+                          Location
+                        </label>
+                        <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
+                          <button
+                            onClick={() => setFilters({ ...filters, location: '' })}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${filters.location === '' ? 'bg-emerald-800 text-white shadow-md' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                          >
+                            All Locations
+                          </button>
+                          {uniqueLocations.map((location) => (
+                            <button
+                              key={location}
+                              onClick={() => setFilters({ ...filters, location })}
+                              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${filters.location === location ? 'bg-emerald-800 text-white shadow-md' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                            >
+                              {location}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Sort By Filter */}
+                      <div className="space-y-3">
+                        <label className="block text-sm font-bold text-zinc-700 flex items-center gap-2">
+                          <Filter size={16} className="text-emerald-700" />
+                          Sort By
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => setFilters({ ...filters, sortBy: 'newest' })}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${filters.sortBy === 'newest' ? 'bg-emerald-800 text-white shadow-md' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                          >
+                            Newest First
+                          </button>
+                          <button
+                            onClick={() => setFilters({ ...filters, sortBy: 'price-low' })}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${filters.sortBy === 'price-low' ? 'bg-emerald-800 text-white shadow-md' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                          >
+                            Price: Low to High
+                          </button>
+                          <button
+                            onClick={() => setFilters({ ...filters, sortBy: 'price-high' })}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${filters.sortBy === 'price-high' ? 'bg-emerald-800 text-white shadow-md' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                          >
+                            Price: High to Low
+                          </button>
+                          <button
+                            onClick={() => setFilters({ ...filters, sortBy: 'title' })}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${filters.sortBy === 'title' ? 'bg-emerald-800 text-white shadow-md' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                          >
+                            Title: A to Z
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Active Filters Summary */}
+                      <div className="space-y-3 pt-6 border-t border-zinc-200">
+                        <label className="block text-sm font-bold text-zinc-700">
+                          Active Filters
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {activeTab !== 'All' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full">
+                              {activeTab}
+                              <button
+                                onClick={() => setActiveTab('All')}
+                                className="hover:text-emerald-900"
+                              >
+                                <X size={14} />
+                              </button>
+                            </span>
+                          )}
+                          {filters.location && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full">
+                              {filters.location}
+                              <button
+                                onClick={() => setFilters({ ...filters, location: '' })}
+                                className="hover:text-emerald-900"
+                              >
+                                <X size={14} />
+                              </button>
+                            </span>
+                          )}
+                          {(filters.priceMin > priceRange.min || filters.priceMax < priceRange.max) && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full">
+                              ${filters.priceMin.toLocaleString()} - ${filters.priceMax === priceRange.max ? 'Max' : filters.priceMax.toLocaleString()}
+                              <button
+                                onClick={() => setFilters({ ...filters, priceMin: priceRange.min, priceMax: priceRange.max })}
+                                className="hover:text-emerald-900"
+                              >
+                                <X size={14} />
+                              </button>
+                            </span>
+                          )}
+                          {filters.searchQuery && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full">
+                              &quot;{filters.searchQuery}&quot;
+                              <button
+                                onClick={() => setFilters({ ...filters, searchQuery: '' })}
+                                className="hover:text-emerald-900"
+                              >
+                                <X size={14} />
+                              </button>
+                            </span>
+                          )}
+                          {activeTab === 'All' && !filters.location && filters.priceMin === priceRange.min && filters.priceMax === priceRange.max && !filters.searchQuery && (
+                            <span className="text-xs text-zinc-400 italic">No filters applied</span>
+                          )}
+                          {!filters.location && filters.priceMin === priceRange.min && filters.priceMax === priceRange.max && !filters.searchQuery && (
+                            <span className="text-xs text-zinc-400 italic">No filters applied</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {/* Desktop Layout */}
-            <div className="hidden lg:flex gap-4 items-center justify-between w-full">
-              <div className="flex items-center gap-2 bg-zinc-100 p-1.5 rounded-xl">
-                {['All', 'Property', 'Vehicle', 'Land'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/50'}`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex gap-4 items-center">
-                <div className="relative w-80">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
-                  <input
-                    type="text"
-                    placeholder="Search by location or name..."
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-transparent bg-white shadow-sm font-medium"
-                  />
-                </div>
-                <div className="flex bg-white border border-zinc-200 rounded-xl p-1 shadow-sm">
-                  <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-emerald-50 text-emerald-800' : 'text-zinc-400 hover:text-zinc-100'}`}>
-                    <Grid3X3 size={20} />
-                  </button>
-                  <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-emerald-50 text-emerald-800' : 'text-zinc-400 hover:text-zinc-100'}`}>
-                    <ListIcon size={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -237,6 +499,6 @@ export default function ListingsPage() {
           ))}
         </div>
       </div>
-    </div>
+    </div >
   );
 }
